@@ -4,31 +4,28 @@
 
 using boost::asio::ip::tcp;
 
-void async_read(tcp::socket &socket)
-{
+
+void async_read(tcp::socket &socket) {
     auto buffer = std::make_shared<boost::asio::streambuf>();
     boost::asio::async_read_until(socket, *buffer, "\n",
-        [&socket, buffer](boost::system::error_code ec, std::size_t length)
-        {
-            if (!ec)
-            {
+        [&socket, buffer](boost::system::error_code ec, std::size_t length) {
+            if (!ec) {
                 std::istream is(buffer.get());
                 std::string received;
                 std::getline(is, received);
                 std::cout << "Server: " << received << std::endl;
-                async_read(socket);
+                async_read(socket); 
             }
-        });
+        }
+    );
 }
 
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
+int main(int argc, char* argv[]){
+    if(argc < 2){
         std::cerr << "Provide port too as second argument" << std::endl;
         return 1;
     }
-
+    
     boost::asio::io_context io_context;
     tcp::socket socket(io_context);
     tcp::resolver resolver(io_context);
@@ -37,8 +34,7 @@ int main(int argc, char *argv[])
 
     async_read(socket);
 
-    std::thread t([&io_context, &socket]()
-                  {
+    std::thread t([&io_context, &socket]() {
         while (true) {
             std::string data;
             std::cout << "Enter message: ";
@@ -48,7 +44,8 @@ int main(int argc, char *argv[])
             boost::asio::post(io_context, [&, data]() {
                 boost::asio::write(socket, boost::asio::buffer(data));
             });
-        } });
+        }
+    });
 
     io_context.run();
     t.join();
