@@ -15,6 +15,9 @@ class Message {
         enum {header = 4};
 
         Message(std::string message){
+            if (!message.empty() && message.back() == '\n') {
+                message.pop_back();
+            }
             bodyLength_ = getNewBodyLength(message.size());
             encodeHeader();
             std::memcpy(data + header, message.c_str(), bodyLength_);
@@ -68,7 +71,7 @@ class Message {
         }
 
     private: 
-        char data[header+maxBytes];
+        char data[header + static_cast<size_t>(maxBytes)];
         size_t bodyLength_;
 };
 

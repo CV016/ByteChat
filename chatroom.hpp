@@ -37,16 +37,21 @@ class Room{
 class Session: public Participant, public std::enable_shared_from_this<Session>{
     public:
         Session(tcp::socket s, Room &room);
+        virtual ~Session();
         void start();
-        void deliver(Message& message);
-        void write(Message &message);
+        void deliver(Message& message) override;
+        void write(Message &message) override;
         void async_read();
         void async_write(std::string messageBody, size_t messageLength);
+        void do_write();
     private:
         tcp::socket clientSocket;
         boost::asio::streambuf buffer;
         Room& room;
         std::deque<Message> messageQueue; 
+        std::string clientId;
+        std::unique_ptr<boost::asio::steady_timer> heartbeat_timer;
+        void start_heartbeat_timer();
 };
 
 #endif CHATROOM_HPP

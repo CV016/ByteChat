@@ -5,19 +5,26 @@
 using boost::asio::ip::tcp;
 
 
-void async_read(tcp::socket &socket) {
+void async_read(tcp::socket &socket, bool &connected) {
     auto buffer = std::make_shared<boost::asio::streambuf>();
     boost::asio::async_read_until(socket, *buffer, "\n",
-        [&socket, buffer](boost::system::error_code ec, std::size_t length) {
+        [&socket, buffer, &connected](boost::system::error_code ec, std::size_t length) {
             if (!ec) {
                 std::istream is(buffer.get());
                 std::string received;
                 std::getline(is, received);
-                std::cout << "Server: " << received << std::endl;
-                async_read(socket); 
+                
+                // Don't display PING messages
+                if (received != "PING") {
+                    std::cout << "Received: " << received << std::endl;
+                }
+                
+                async_read(socket, connected);
+            } else {
+                std::cerr << "Read error: " << ec.message() << std::endl;
+                connected = false;
             }
-        }
-    );
+        });
 }
 
 int main(int argc, char* argv[]){
@@ -32,7 +39,8 @@ int main(int argc, char* argv[]){
 
     boost::asio::connect(socket, resolver.resolve("127.0.0.1", argv[1]));
 
-    async_read(socket);
+    bool connected = true;
+    async_read(socket, connected);
 
     std::thread t([&io_context, &socket]() {
         while (true) {
